@@ -1,0 +1,68 @@
+{
+  "expo": {
+    "name": "Nearby AI",
+    "slug": "nearby-ai",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "nearby-ai",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/images/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#FFFFFF"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.nearbyai.app",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Nearby AI использует геолокацию для поиска ближайших мест и заведений.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Nearby AI использует геолокацию для поиска ближайших мест и заведений."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "backgroundColor": "#8B1538"
+      },
+      "edgeToEdgeEnabled": true,
+      "package": "com.nearbyai.app",
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION"
+      ]
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "static",
+      "favicon": "./assets/images/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Nearby AI использует геолокацию для поиска ближайших мест и заведений."
+        }
+      ],
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/images/splash-icon.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "backgroundColor": "#FFFFFF"
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "eas": {
+        "projectId": "e2aa88b8-c395-4a8a-bf45-283c37bb4b55"
+      }
+    }
+  }
+}

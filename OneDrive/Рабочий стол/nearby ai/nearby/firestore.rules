@@ -1,0 +1,144 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // 👤 ПРАВИЛА ДЛЯ ПОЛЬЗОВАТЕЛЕЙ
+    match /users/{userId} {
+      // Каждый пользователь может читать и изменять только свой документ
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // ⚙️ ПРАВИЛА ДЛЯ ПРЕДПОЧТЕНИЙ ПОЛЬЗОВАТЕЛЕЙ
+    match /userPreferences/{userId} {
+      // Каждый пользователь может читать и изменять только свои предпочтения
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // 📸 ПРАВИЛА ДЛЯ ФОТОГРАФИЙ
+    match /businessProfiles/{businessId}/photos/{photoId} {
+      // Чтение: публичный доступ к фото
+      allow read: if true;
+      
+      // Создание: только владелец бизнеса с проверками
+      allow create: if request.auth != null && 
+        request.auth.uid == get(/databases/$(database)/documents/businessProfiles/$(businessId)).data.userId &&
+        request.resource.data.size <= 5 * 1024 * 1024 && // Проверка размера
+        request.resource.data.keys().hasAll(['id', 'originalUrl', 'thumbnailUrl', 'category', 'order', 'createdAt']); // Обязательные поля
+      
+      // Обновление: владелец может обновлять метаданные
+      allow update: if request.auth != null &&
+        request.auth.uid == get(/databases/$(database)/documents/businessProfiles/$(businessId)).data.userId &&
+        request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['caption', 'order', 'isMain', 'updatedAt']); // Разрешенные поля для обновления
+      
+      // Удаление: владелец может удалять свои фото
+      allow delete: if request.auth != null &&
+        request.auth.uid == get(/databases/$(database)/documents/businessProfiles/$(businessId)).data.userId;
+    }
+
+    // 🏢 ПРАВИЛА ДЛЯ БИЗНЕС-ПРОФИЛЕЙ
+    match /businessProfiles/{profileId} {
+      // Чтение: публичный доступ для одобренных профилей
+      allow read: if resource.data.isApproved == true || (
+        request.auth != null && (
+          request.auth.uid == resource.data.userId ||
+          request.auth.token.email == 'malina@gmail.com'
+        )
+      );
+      
+      // Создание: только владелец может создать свой профиль
+      allow create: if request.auth != null && 
+                   request.auth.uid == request.resource.data.userId;
+      
+      // Обновление: только владелец или администратор
+      allow update: if request.auth != null && (
+        request.auth.uid == resource.data.userId ||
+        request.auth.token.email == 'malina@gmail.com'
+      );
+      
+      // Удаление: только администратор
+      allow delete: if request.auth != null && 
+                   request.auth.token.email == 'malina@gmail.com';
+    }
+    
+    // 📋 ПРАВИЛА ДЛЯ МЕНЮ БИЗНЕСА
+    match /businessMenu/{itemId} {
+      // Чтение: все могут читать меню (включая незарегистрированных)
+      allow read: if true;
+      
+      // Создание: только владелец бизнеса может создавать элементы меню
+      allow create: if request.auth != null && 
+                   request.auth.uid == request.resource.data.userId;
+      
+      // Обновление и удаление: только владелец элемента меню или администратор
+      allow update, delete: if request.auth != null && (
+        request.auth.uid == resource.data.userId ||
+        request.auth.token.email == 'malina@gmail.com'
+      );
+    }
+    
+    // 🌍 ПРАВИЛА ДЛЯ ОДОБРЕННЫХ МЕСТ - ПУБЛИЧНЫЙ ДОСТУП
+    match /approvedPlaces/{placeId} {
+      // Чтение: все пользователи (включая неавторизованных)
+      allow read: if true;
+      
+      // Создание и обновление: только администратор
+      allow create, update: if request.auth != null && 
+                           request.auth.token.email == 'malina@gmail.com';
+      
+      // Удаление: только администратор
+      allow delete: if request.auth != null && 
+                   request.auth.token.email == 'malina@gmail.com';
+    }
+
+    // 📝 ПРАВИЛА ДЛЯ ОТЗЫВОВ
+    match /reviews/{reviewId} {
+      // Чтение: публичный доступ к одобренным отзывам
+      allow read: if true;
+      
+      // Чтение для модерации: только администратор или владелец бизнеса
+      allow read: if request.auth != null && (
+        request.auth.token.email == 'malina@gmail.com' ||
+        request.auth.uid == resource.data.businessOwnerId
+      );
+      
+      // Создание: только авторизованные пользователи
+      allow create: if request.auth != null && 
+                   request.auth.uid == request.resource.data.userId;
+      
+      // Обновление: только администратор (для модерации)
+      allow update: if request.auth != null && 
+                   request.auth.token.email == 'malina@gmail.com';
+      
+      // Удаление: только администратор
+      allow delete: if request.auth != null && 
+                   request.auth.token.email == 'malina@gmail.com';
+    }
+
+    // 👥 ПРАВИЛА ДЛЯ ПЕРСОНАЛА
+    match /staff/{staffId} {
+      // Чтение: только владелец бизнеса и администратор
+      allow read: if request.auth != null;
+      
+      // Создание: только авторизованные пользователи
+      allow create: if request.auth != null;
+      
+      // Обновление: владелец бизнеса или администратор
+      allow update: if request.auth != null;
+      
+      // Удаление: владелец бизнеса или администратор
+      allow delete: if request.auth != null;
+    }
+
+    // 🔔 ПРАВИЛА ДЛЯ УВЕДОМЛЕНИЙ АДМИНОВ
+    match /adminNotifications/{notificationId} {
+      // Чтение и запись: только администратор
+      allow read, write: if request.auth != null && 
+                        request.auth.token.email == 'malina@gmail.com';
+      
+      // Создание: все авторизованные пользователи могут создавать уведомления
+      allow create: if request.auth != null;
+    }
+  }
+} 
